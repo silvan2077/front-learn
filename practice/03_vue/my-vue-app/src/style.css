@@ -1,0 +1,11 @@
+/* 对齐 js 版（practice/02-js-todo）的页面底子：对角渐变 + 上下留白 */
+body {
+  box-sizing: border-box; /* 没有它的话 min-height: 100vh 会加上下 padding 变成 100vh + 80px，多出滚动条 */
+  margin: 0;
+  min-height: 100vh;
+  padding: 40px 20px;
+  background: linear-gradient(135deg, #9922dd, #2266ee);
+  color: #222;
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+}
