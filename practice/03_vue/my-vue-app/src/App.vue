@@ -4,7 +4,7 @@ import { ref, computed, watch } from 'vue'
 // ===== 基础数据 =====
 const STORAGE_KEY = 'vue-todos'
 
-// 首次进入用默认数据；之后每次刷新从 localStorage 恢复（配合下方 watch）
+// 读缓存->损坏兜底->默认数据
 function load() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
@@ -19,18 +19,21 @@ function load() {
   ]
 }
 
+// 将值装进对象，方便vue拦截变化
 const value = ref('')
 const list = ref(load())
 
 // id 计数器：从存档里取最大 id + 1，刷新后不会与已有数据冲突
-// reduce 的用法就是 js.md 第 2 节 reduce(0, Integer::sum) 的同款
 let nextId = list.value.reduce((max, item) => Math.max(max, item.id), 0) + 1
 
-// ===== 场景 1：computed —— 统计（派生数据，自动重算，不要手动维护）=====
+// computed来定义【依赖别的响应式数据自动算出来的值】
+// 自带缓存，依赖不变就不会重复计算，只读为主。
+//  —— 统计（派生数据，自动重算，不要手动维护）=====
 const totalCount = computed(() => list.value.length)
 const activeCount = computed(() => list.value.filter(item => !item.isCompleted).length)
 
-// ===== 场景 2：computed + 筛选 =====
+
+// ===== 筛选后展示的列表 =====
 const filters = ['全部', '未完成', '已完成']
 const activeFilter = ref('全部')
 const visibleList = computed(() => {
@@ -39,23 +42,27 @@ const visibleList = computed(() => {
   return list.value
 })
 
-// ===== 场景 3：侦听器 watch 单个 ref —— 重复任务实时检测 =====
+
+// 侦听器 watch 单个 ref —— 重复任务实时检测
 const isDuplicate = ref(false)
 watch(value, (text) => {
   const t = text.trim()
-  // some() ≈ Java Stream 的 anyMatch（js.md 第 2 节）
+  // some() ≈ Java Stream 的 anyMatch
   isDuplicate.value = t !== '' && list.value.some(item => item.value === t)
 })
 
-// ===== 场景 4：侦听器 watch 深层监听 —— 持久化到 localStorage =====
+// 侦听器 watch 深层监听 —— 持久化到 localStorage
 // deep: true 让数组内部的变化（比如勾选 isCompleted）也能被侦听到
+// 注意：watch 回调的参数是"解包后的值"（数组本身），不要再 .value
 watch(list, (newValue) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(newValue.value))
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(newValue))
 }, { deep: true })
 
 function add() {
   const text = value.value.trim()
   if (!text) return
+  // 拦截重复任务
+  if (list.value.some(item => item.value === text)) return
 
   // 添加元素
   list.value.push({
@@ -92,7 +99,7 @@ function del(id) {
          适合像这样"每次按键都可能开关"的高频提示 -->
     <p v-show="isDuplicate" class="warn">该任务已存在，换一个吧</p>
 
-    <!-- v-for 新场景：遍历普通字符串数组渲染筛选按钮，:key 用唯一字符串 -->
+    <!-- v-for ：遍历普通字符串数组渲染筛选按钮，:key 用唯一字符串，当做主键 -->
     <div class="filters">
       <button
         v-for="f in filters"
