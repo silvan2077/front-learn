@@ -1,0 +1,7 @@
+[
+  { "id": 1, "value": "吃饭", "isCompleted": true },
+  { "id": 2, "value": "睡觉", "isCompleted": false },
+  { "id": 3, "value": "学习React", "isCompleted": false },
+  { "id": 4, "value": "复习 TypeScript 类型", "isCompleted": true },
+  { "id": 5, "value": "整理网络请求笔记", "isCompleted": false }
+]
